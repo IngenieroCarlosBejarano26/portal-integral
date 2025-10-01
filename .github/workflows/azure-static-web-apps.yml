@@ -15,7 +15,6 @@ permissions:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
 
     strategy:
       matrix:
@@ -32,10 +31,16 @@ jobs:
           #   environment: production
           #   build_command: npm run build
           #   token: AZURE_STATIC_WEB_APPS_API_TOKEN_PROD
-
+    
     environment: ${{ matrix.environment }}
 
     steps:
+      - name: Check branch matches matrix
+        if: github.event.pull_request.base.ref != matrix.branch
+        run: |
+          echo "Skipping job: PR base ref is '${{ github.event.pull_request.base.ref }}' but matrix expects '${{ matrix.branch }}'"
+          exit 0
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
