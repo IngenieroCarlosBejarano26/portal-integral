@@ -27,8 +27,7 @@
               "target": "portal-integral:esbuild:local",
               "dev": true
             }
-          },
-          "defaultConfiguration": "production"
+          }
         },
         "serve": {
           "builder": "@angular-architects/native-federation:build",
@@ -96,7 +95,7 @@
               "outputHashing": "all",
               "fileReplacements": [
                 {
-                  "replace": "src/environments/environment.ts",
+                  "replace": "src/environments/environment.local.ts",
                   "with": "src/environments/environment.prod.ts"
                 }
               ]
@@ -108,7 +107,7 @@
               "outputHashing": "all",
               "fileReplacements": [
                 {
-                  "replace": "src/environments/environment.ts",
+                  "replace": "src/environments/environment.local.ts",
                   "with": "src/environments/environment.dev.ts"
                 }
               ]
@@ -120,7 +119,7 @@
               "outputHashing": "all",
               "fileReplacements": [
                 {
-                  "replace": "src/environments/environment.ts",
+                  "replace": "src/environments/environment.local.ts",
                   "with": "src/environments/environment.qa.ts"
                 }
               ]
@@ -131,8 +130,7 @@
               "sourceMap": true,
               "watch": true
             }
-          },
-          "defaultConfiguration": "production"
+          }
         },
         "serve-original": {
           "builder": "@angular-devkit/build-angular:dev-server",
