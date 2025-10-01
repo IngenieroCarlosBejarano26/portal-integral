@@ -13,15 +13,34 @@ permissions:
 
 jobs:
   #########################
-  # Job Development
+  # Build único (sube código fuente)
   #########################
-  build_and_deploy_dev:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload source code
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-source
+          path: . # 👈 subimos el código completo, no el dist
+
+  #########################
+  # Deploy Development
+  #########################
+  deploy_dev:
+    needs: build
     environment: development
     runs-on: ubuntu-latest
     if: github.ref_name == 'develop'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Download source code
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-source
+          path: .
 
       - name: Deploy to Azure Static Web Apps (Dev)
         uses: Azure/static-web-apps-deploy@v1
@@ -30,19 +49,23 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
-          output_location: "dist/portal-integral/browser"
           app_build_command: "npm run build:dev"
+          output_location: "dist/portal-integral/browser"
 
   #########################
-  # Job QA
+  # Deploy QA
   #########################
-  build_and_deploy_qa:
+  deploy_qa:
+    needs: build
     environment: qa
     runs-on: ubuntu-latest
     if: github.ref_name == 'qa'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Download source code
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-source
+          path: .
 
       - name: Deploy to Azure Static Web Apps (QA)
         uses: Azure/static-web-apps-deploy@v1
@@ -51,19 +74,23 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
-          output_location: "dist/portal-integral/browser"
           app_build_command: "npm run build:qa"
+          output_location: "dist/portal-integral/browser"
 
   #########################
-  # Job Production
+  # Deploy Production
   #########################
-  build_and_deploy_prod:
+  deploy_prod:
+    needs: build
     environment: production
     runs-on: ubuntu-latest
     if: github.ref_name == 'main'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Download source code
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-source
+          path: .
 
       - name: Deploy to Azure Static Web Apps (Prod)
         uses: Azure/static-web-apps-deploy@v1
@@ -72,5 +99,5 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
-          output_location: "dist/portal-integral/browser"
           app_build_command: "npm run build"
+          output_location: "dist/portal-integral/browser"
