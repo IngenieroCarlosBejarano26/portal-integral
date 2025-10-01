@@ -15,59 +15,53 @@ permissions:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        include:
-          - branch: develop
-            environment: development
-            build_command: npm run build:dev
-            token: AZURE_STATIC_WEB_APPS_API_TOKEN_DEV
-          - branch: qa
-            environment: qa
-            build_command: npm run build:qa
-            token: AZURE_STATIC_WEB_APPS_API_TOKEN_QA
-
-    environment: ${{ matrix.environment }}
+    environment: ${{ github.event.pull_request.base.ref }}
+    if: |
+      github.event.pull_request.base.ref == 'develop' || 
+      github.event.pull_request.base.ref == 'qa' ||
+      github.event.pull_request.base.ref == 'main'
 
     steps:
       - name: Checkout repository
-        if: github.event.pull_request.base.ref == matrix.branch
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        if: github.event.pull_request.base.ref == matrix.branch
         uses: actions/setup-node@v4
         with:
-          node-version: "22.14.0"
-          cache: "npm"
+          node-version: '22.14.0'
+          cache: 'npm'
 
       - name: Install dependencies
-        if: github.event.pull_request.base.ref == matrix.branch
         run: npm install
 
       - name: Build Angular app
-        if: github.event.pull_request.base.ref == matrix.branch
-        run: ${{ matrix.build_command }}
+        run: |
+          case "${{ github.event.pull_request.base.ref }}" in
+            develop) npm run build:dev ;;
+            qa)      npm run build:qa ;;
+            main)    npm run build ;;
+          esac
 
       - name: Copy staticwebapp.config.json
-        if: github.event.pull_request.base.ref == matrix.branch
         run: cp staticwebapp.config.json dist/portal-integral/browser/
 
       - name: Upload build artifact
-        if: github.event.pull_request.base.ref == matrix.branch
         uses: actions/upload-artifact@v4
         with:
-          name: angular-build-${{ matrix.environment }}
+          name: angular-build-${{ github.event.pull_request.base.ref }}
           path: dist/portal-integral/browser
 
       - name: Deploy to Azure Static Web Apps
-        if: github.event.pull_request.base.ref == matrix.branch
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets[matrix.token] }}
+          azure_static_web_apps_api_token: ${{ secrets[ github.event.pull_request.base.ref == 'develop' && 'AZURE_STATIC_WEB_APPS_API_TOKEN_DEV' || github.event.pull_request.base.ref == 'qa' && 'AZURE_STATIC_WEB_APPS_API_TOKEN_QA' || 'AZURE_STATIC_WEB_APPS_API_TOKEN_PROD' ] }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
           output_location: "dist/portal-integral/browser"
-          app_build_command: ${{ matrix.build_command }}
+          app_build_command: |
+            case "${{ github.event.pull_request.base.ref }}" in
+              develop) npm run build:dev ;;
+              qa)      npm run build:qa ;;
+              main)    npm run build ;;
+            esac
