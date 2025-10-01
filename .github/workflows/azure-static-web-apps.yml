@@ -47,7 +47,7 @@ jobs:
 
       #  Compilar el proyecto Angular en modo development
       - name: Build Angular app
-        run: npm run build -- --configuration development
+        run: npm run build:dev
 
       # Copiar archivo de configuración SWA al build
       - name: Copy staticwebapp.config.json
@@ -72,7 +72,8 @@ jobs:
           action: "upload"
           app_location: "/"                     # Raíz del proyecto
           output_location: "dist/portal-integral/browser"  # Carpeta de salida de Angular
-          
+          app_build_command: "npm run build:dev"
+
   build_and_deploy_qa:
     environment: qa
     needs: build_and_deploy
@@ -103,7 +104,7 @@ jobs:
 
       #  Compilar el proyecto Angular en modo QA
       - name: Build Angular app for QA
-        run: npm run build -- --configuration qa
+        run: npm run build:qa
 
       # Copiar archivo de configuración SWA al build
       - name: Copy staticwebapp.config.json
@@ -128,3 +129,4 @@ jobs:
           action: "upload"
           app_location: "/"                     # Raíz del proyecto
           output_location: "dist/portal-integral/browser"  # Carpeta de salida de Angular
+          app_build_command: "npm run build:qa"
