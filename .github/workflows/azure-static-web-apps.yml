@@ -18,7 +18,7 @@ jobs:
   build_and_deploy_dev:
     environment: development
     runs-on: ubuntu-latest
-
+    if: startsWith(github.ref, 'refs/heads/develop')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -69,7 +69,7 @@ jobs:
     environment: qa
     needs: build_and_deploy_dev
     runs-on: ubuntu-latest
-
+    if: startsWith(github.ref, 'refs/heads/qa')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -120,7 +120,7 @@ jobs:
     environment: production
     needs: [build_and_deploy_dev, build_and_deploy_qa]
     runs-on: ubuntu-latest
-
+    if: startsWith(github.ref, 'refs/heads/main')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
