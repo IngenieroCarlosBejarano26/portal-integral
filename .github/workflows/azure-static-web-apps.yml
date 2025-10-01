@@ -47,7 +47,7 @@ jobs:
 
       #  Compilar el proyecto Angular en modo development
       - name: Build Angular app
-        run: npm run build:dev
+        run: npm run build -- --configuration development
 
       # Copiar archivo de configuración SWA al build
       - name: Copy staticwebapp.config.json
@@ -103,7 +103,7 @@ jobs:
 
       #  Compilar el proyecto Angular en modo QA
       - name: Build Angular app for QA
-        run: npm run build:qa
+        run: npm run build -- --configuration qa
 
       # Copiar archivo de configuración SWA al build
       - name: Copy staticwebapp.config.json
