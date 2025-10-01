@@ -96,7 +96,7 @@
               "outputHashing": "all",
               "fileReplacements": [
                 {
-                  "replace": "src/environments/environment.ts",
+                  "replace": "src/environments/environment.local.ts",
                   "with": "src/environments/environment.prod.ts"
                 }
               ]
@@ -108,7 +108,7 @@
               "outputHashing": "all",
               "fileReplacements": [
                 {
-                  "replace": "src/environments/environment.ts",
+                  "replace": "src/environments/environment.local.ts",
                   "with": "src/environments/environment.dev.ts"
                 }
               ]
@@ -120,7 +120,7 @@
               "outputHashing": "all",
               "fileReplacements": [
                 {
-                  "replace": "src/environments/environment.ts",
+                  "replace": "src/environments/environment.local.ts",
                   "with": "src/environments/environment.qa.ts"
                 }
               ]
