@@ -1,162 +1,71 @@
 name: Azure Static Web Apps CI/CD
-# Usaremos 'workflow_dispatch' para poder ejecutarlo manualmente y 'pull_request_target' para el despliegue a entornos de PR
+
 on:
-  push:
-    branches:
-      - main
-      - develop
-      - qa
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened]
     branches:
       - main
       - develop
       - qa
-  workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: write 
-
-# ---
-## 🛠️ Jobs
+  pull-requests: write   
 
 jobs:
-  # Job para construir la aplicación Angular (solo se ejecuta una vez)
-  build:
-    environment: development # Se usará como entorno base para el build
+  build_and_deploy:
     runs-on: ubuntu-latest
-    # Se ejecuta en cualquier 'push' o 'pull_request' abierto/sincronizado/reabierto
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    if: github.event_name == 'pull_request'
+
+    strategy:
+      matrix:
+        include:
+          - branch: develop
+            environment: development
+            build_command: npm run build:dev
+            token: AZURE_STATIC_WEB_APPS_API_TOKEN_DEV
+          - branch: qa
+            environment: qa
+            build_command: npm run build:qa
+            token: AZURE_STATIC_WEB_APPS_API_TOKEN_QA
+          # - branch: main
+          #   environment: production
+          #   build_command: npm run build
+          #   token: AZURE_STATIC_WEB_APPS_API_TOKEN_PROD
+
+    environment: ${{ matrix.environment }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
-      # Usar una versión de Node más general y dejar el manejo del entorno de build a npm/Angular
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Angular 19 es compatible con Node 20+
+          node-version: '22.14.0'
           cache: 'npm'
 
-      # La limpieza del caché antes de 'npm install' no suele ser necesaria si se usa 'actions/setup-node' con caché
-      # En entornos de CI, 'npm ci' es más rápido y asegura dependencias del 'lock file'
       - name: Install dependencies
         run: npm install
 
-      # Determinar el script de build basado en la rama actual (o un valor por defecto)
-      - name: Determine Build Command
-        id: build_cmd
-        run: |
-          BUILD_SCRIPT=""
-          if [[ "${{ github.ref }}" == "refs/heads/qa" ]]; then
-            BUILD_SCRIPT="npm run build:qa"
-          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            BUILD_SCRIPT="npm run build:prod" # Asumiendo un build de producción para main
-          else
-            BUILD_SCRIPT="npm run build:dev"
-          fi
-          echo "build_script=$BUILD_SCRIPT" >> $GITHUB_OUTPUT
+      - name: Build Angular app
+        run: ${{ matrix.build_command }}
 
-      # Compilar la aplicación. Usamos el script determinado.
-      - name: Build Angular App
-        run: ${{ steps.build_cmd.outputs.build_script }}
+      - name: Copy staticwebapp.config.json
+        run: cp staticwebapp.config.json dist/portal-integral/browser/
 
-      # Mover archivos de configuración. Mejorar con 'rsync' si son muchos o usar una acción.
-      - name: Prepare build files
-        run: |
-          # Copiar archivo de configuración SWA al build
-          cp staticwebapp.config.json dist/portal-integral/browser/
-          # Eliminar archivo remoto
-          rm -f dist/portal-integral/browser/remoteEntry.json
-          
-      # Guardar el build como artefacto (es esencial para el job de despliegue)
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: angular-build-artifact
+          name: angular-build-${{ matrix.environment }}
           path: dist/portal-integral/browser
-          retention-days: 1 # Opcional: limpiar artefactos viejos
-          
-  # ---
-  # Job de despliegue a DEV (ejecuta solo si el build fue exitoso)
-  deploy_dev:
-    needs: build
-    environment: development
-    runs-on: ubuntu-latest
-    # Se ejecuta en 'push' a develop o PRs *excepto* a qa o main, o push a develop.
-    if: |
-      github.event_name == 'push' && github.ref == 'refs/heads/develop' ||
-      (github.event_name == 'pull_request' && github.base_ref == 'refs/heads/develop' && github.event.action != 'closed')
 
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: angular-build-artifact
-          path: dist/portal-integral/browser # Debe ser la misma ruta que en el build
-
-      # Desplegar en Azure Static Web Apps
-      - name: Deploy to Azure Static Web Apps (DEV)
+      - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DEV }}
+          azure_static_web_apps_api_token: ${{ secrets[matrix.token] }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
           output_location: "dist/portal-integral/browser"
-          # NO necesita app_build_command, ya que solo estamos haciendo 'upload'
-
-  # ---
-  # Job de despliegue a QA
-  deploy_qa:
-    needs: build
-    environment: qa
-    runs-on: ubuntu-latest
-    # Se ejecuta en 'push' a qa o PRs *excepto* a main.
-    if: |
-      github.event_name == 'push' && github.ref == 'refs/heads/qa' ||
-      (github.event_name == 'pull_request' && github.base_ref == 'refs/heads/qa' && github.event.action != 'closed')
-
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: angular-build-artifact
-          path: dist/portal-integral/browser
-
-      # Desplegar en Azure Static Web Apps (QA)
-      - name: Deploy to Azure Static Web Apps (QA)
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_QA }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: "upload"
-          app_location: "/"
-          output_location: "dist/portal-integral/browser"
-
-  # ---
-  # Job de despliegue a MAIN/PRODUCCIÓN (solo en push a main)
-  deploy_main:
-    needs: build
-    environment: production # Asumimos que main es producción
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: angular-build-artifact
-          path: dist/portal-integral/browser
-
-      # Despliegue a Producción
-      - name: Deploy to Azure Static Web Apps (Main)
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_PROD }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: "upload"
-          app_location: "/"
-          output_location: "dist/portal-integral/browser"
+          app_build_command: ${{ matrix.build_command }}
