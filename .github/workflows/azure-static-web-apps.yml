@@ -1,17 +1,11 @@
 name: Azure Static Web Apps CI/CD
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches:
-      - develop
-      - qa
-      - main
   push:
     branches:
+      - main
       - develop
       - qa
-      - main
 
 permissions:
   contents: read
