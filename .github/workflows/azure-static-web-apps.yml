@@ -59,9 +59,6 @@ jobs:
       - name: Copy staticwebapp.config.json
         run: cp staticwebapp.config.json dist/portal-integral/browser/
 
-      - name: Remove host remoteEntry.json
-        run: rm -f dist/portal-integral/browser/remoteEntry.json
-
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
