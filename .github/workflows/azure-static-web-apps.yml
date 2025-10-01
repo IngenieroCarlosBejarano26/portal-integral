@@ -43,7 +43,7 @@ jobs:
       # La limpieza del caché antes de 'npm install' no suele ser necesaria si se usa 'actions/setup-node' con caché
       # En entornos de CI, 'npm ci' es más rápido y asegura dependencias del 'lock file'
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       # Determinar el script de build basado en la rama actual (o un valor por defecto)
       - name: Determine Build Command
