@@ -10,37 +10,15 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write   
+  pull-requests: write
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        include:
-          - branch: develop
-            environment: development
-            build_command: npm run build:dev
-            token: AZURE_STATIC_WEB_APPS_API_TOKEN_DEV
-          - branch: qa
-            environment: qa
-            build_command: npm run build:qa
-            token: AZURE_STATIC_WEB_APPS_API_TOKEN_QA
-          # - branch: main
-          #   environment: production
-          #   build_command: npm run build
-          #   token: AZURE_STATIC_WEB_APPS_API_TOKEN_PROD
+    environment: ${{ github.event.pull_request.base.ref }}
+    if: github.event.pull_request.base.ref == 'develop' || github.event.pull_request.base.ref == 'qa'
     
-    environment: ${{ matrix.environment }}
-
     steps:
-      - name: Check branch matches matrix
-        if: github.event.pull_request.base.ref != matrix.branch
-        run: |
-          echo "Skipping job: PR base ref is '${{ github.event.pull_request.base.ref }}' but matrix expects '${{ matrix.branch }}'"
-          exit 0
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -54,7 +32,12 @@ jobs:
         run: npm install
 
       - name: Build Angular app
-        run: ${{ matrix.build_command }}
+        run: |
+          if [ "${{ github.event.pull_request.base.ref }}" == "develop" ]; then
+            npm run build:dev
+          elif [ "${{ github.event.pull_request.base.ref }}" == "qa" ]; then
+            npm run build:qa
+          fi
 
       - name: Copy staticwebapp.config.json
         run: cp staticwebapp.config.json dist/portal-integral/browser/
@@ -62,15 +45,20 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: angular-build-${{ matrix.environment }}
+          name: angular-build-${{ github.event.pull_request.base.ref }}
           path: dist/portal-integral/browser
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets[matrix.token] }}
+          azure_static_web_apps_api_token: ${{ secrets[ github.event.pull_request.base.ref == 'develop' && 'AZURE_STATIC_WEB_APPS_API_TOKEN_DEV' || 'AZURE_STATIC_WEB_APPS_API_TOKEN_QA' ] }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
           output_location: "dist/portal-integral/browser"
-          app_build_command: ${{ matrix.build_command }}
+          app_build_command: |
+            if [ "${{ github.event.pull_request.base.ref }}" == "develop" ]; then
+              npm run build:dev
+            elif [ "${{ github.event.pull_request.base.ref }}" == "qa" ]; then
+              npm run build:qa
+            fi
