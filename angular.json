@@ -28,7 +28,7 @@
               "dev": true
             }
           },
-          "defaultConfiguration": "production"
+          "defaultConfiguration": "development"
         },
         "serve": {
           "builder": "@angular-architects/native-federation:build",
@@ -132,7 +132,7 @@
               "watch": true
             }
           },
-          "defaultConfiguration": "production"
+          "defaultConfiguration": "development"
         },
         "serve-original": {
           "builder": "@angular-devkit/build-angular:dev-server",
