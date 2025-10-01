@@ -3,9 +3,9 @@ name: Azure Static Web Apps CI/CD
 on:
   push:
     branches:
-      - main
       - develop
       - qa
+      - main
 
 permissions:
   contents: read
@@ -13,12 +13,13 @@ permissions:
 
 jobs:
   #########################
-  # Job Development
+  # Deploy Development
   #########################
-  build_and_deploy_dev:
-    environment: development
+  deploy_dev:
     runs-on: ubuntu-latest
     if: github.ref_name == 'develop'
+    environment: development
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,12 +35,13 @@ jobs:
           app_build_command: "npm run build:dev"
 
   #########################
-  # Job QA
+  # Deploy QA
   #########################
-  build_and_deploy_qa:
-    environment: qa
+  deploy_qa:
     runs-on: ubuntu-latest
     if: github.ref_name == 'qa'
+    environment: qa
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -55,12 +57,13 @@ jobs:
           app_build_command: "npm run build:qa"
 
   #########################
-  # Job Production
+  # Deploy Production
   #########################
-  build_and_deploy_prod:
-    environment: production
+  deploy_prod:
     runs-on: ubuntu-latest
     if: github.ref_name == 'main'
+    environment: production
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
