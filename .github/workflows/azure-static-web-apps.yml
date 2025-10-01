@@ -6,12 +6,6 @@ on:
       - main
       - develop
       - qa
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches:
-      - main
-      - develop
-      - qa
 
 permissions:
   contents: read
@@ -23,7 +17,7 @@ permissions:
 jobs:
   build_and_deploy_dev:
     environment: development
-    if: (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.base.ref == 'develop')
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
 
     steps:
@@ -69,13 +63,13 @@ jobs:
           output_location: "dist/portal-integral/browser"
           app_build_command: "npm run build:dev"
 
-  #########################
-  # Job QA
-  #########################
+#########################
+# Job QA
+#########################
   build_and_deploy_qa:
     environment: qa
     needs: build_and_deploy_dev
-    if: (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.base.ref == 'qa')
+    if: github.ref == 'refs/heads/qa'
     runs-on: ubuntu-latest
 
     steps:
@@ -121,13 +115,13 @@ jobs:
           output_location: "dist/portal-integral/browser"
           app_build_command: "npm run build:qa"
 
-  #########################
-  # Job Production
-  #########################
+#########################
+# Job Production
+#########################
   build_and_deploy_prod:
     environment: production
     needs: [build_and_deploy_dev, build_and_deploy_qa]
-    if: (github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.base.ref == 'main')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
