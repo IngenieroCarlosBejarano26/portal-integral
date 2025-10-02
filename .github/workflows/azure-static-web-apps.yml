@@ -12,50 +12,68 @@ permissions:
   pull-requests: write
 
 jobs:
-  deploy:
+  #########################
+  # Deploy Development
+  #########################
+  deploy_dev:
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        include:
-          - branch: develop
-            env_name: development
-            token_secret: AZURE_STATIC_WEB_APPS_API_TOKEN_DEV
-            build_script: npm run build:dev
-          - branch: qa
-            env_name: qa
-            token_secret: AZURE_STATIC_WEB_APPS_API_TOKEN_QA
-            build_script: npm run build:qa
-          - branch: main
-            env_name: production
-            token_secret: AZURE_STATIC_WEB_APPS_API_TOKEN_PROD
-            build_script: npm run build
+    if: github.ref_name == 'develop'
+    environment: development
 
-    environment: ${{ matrix.env_name }}
-    
-    steps: 
+    steps:
       - name: Checkout repository
-        if: github.ref == 'refs/heads/${{ matrix.branch }}'
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        if: github.ref == 'refs/heads/${{ matrix.branch }}'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        if: github.ref == 'refs/heads/${{ matrix.branch }}'
-        run: npm install
-
-      - name: Deploy to Azure Static Web Apps (${{ matrix.env_name }})
-        if: github.ref == 'refs/heads/${{ matrix.branch }}'
+      - name: Deploy to Azure Static Web Apps (Dev)
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets[matrix.token_secret] }}
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DEV }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
           output_location: "dist/portal-integral/browser"
-          app_build_command: ${{ matrix.build_script }}
+          app_build_command: "npm run build:dev"
+
+  #########################
+  # Deploy QA
+  #########################
+  deploy_qa:
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'qa'
+    environment: qa
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Azure Static Web Apps (QA)
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_QA }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/"
+          output_location: "dist/portal-integral/browser"
+          app_build_command: "npm run build:qa"
+
+  #########################
+  # Deploy Production
+  #########################
+  deploy_prod:
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'main'
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Azure Static Web Apps (Prod)
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_PROD }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/"
+          output_location: "dist/portal-integral/browser"
+          app_build_command: "npm run build"
